@@ -48,9 +48,45 @@ func handleRequests() {
 	myRouter := mux.NewRouter().StrictSlash(true)
 	myRouter.HandleFunc("/", homePage)
 	myRouter.HandleFunc("/create", createTable)
+	myRouter.HandleFunc("/add", addItem)
 	myRouter.HandleFunc("/all", returnAllArticles)
 	myRouter.HandleFunc("/article/{id}", returnSingleArticle)
 	log.Fatal(http.ListenAndServe(":8080", myRouter))
+}
+
+func addItem(w http.ResponseWriter, r *http.Request) {
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String("us-east-1")},
+	)
+
+	// Create DynamoDB client
+	svc := dynamodb.New(sess)
+
+	data := Article{
+		Title: "aaa", Id: 2,
+	}
+
+	dd, err := dynamodbattribute.MarshalMap(data)
+	if err != nil {
+		panic("Cannot marshal data into AttributeValue map")
+	}
+
+	params := &dynamodb.PutItemInput{
+		TableName: aws.String("Articles"),
+		Item:      dd,
+	}
+
+	resp, err := svc.PutItem(params)
+	if err != nil {
+		fmt.Printf("ERROR: %v\n", err.Error())
+		return
+	}
+
+	// print the response data
+	fmt.Println("Success")
+	fmt.Println(resp)
+
+
 }
 
 func createTable(w http.ResponseWriter, r *http.Request) {
@@ -71,8 +107,8 @@ func createTable(w http.ResponseWriter, r *http.Request) {
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
 			// {AttributeName: aws.String("Desc"), AttributeType: aws.String("S")},
 			// {AttributeName: aws.String("Content"), AttributeType: aws.String("S")},
+			{AttributeName: aws.String("Id"), AttributeType: aws.String("N")},
 			{AttributeName: aws.String("Title"), AttributeType: aws.String("S")},
-			{AttributeName: aws.String("Id"), AttributeType: aws.String("S")},
 		},
 		ProvisionedThroughput: &dynamodb.ProvisionedThroughput{
 			ReadCapacityUnits:  aws.Int64(10),
