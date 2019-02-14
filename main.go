@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -49,9 +50,43 @@ func handleRequests() {
 	myRouter.HandleFunc("/", homePage)
 	myRouter.HandleFunc("/create", createTable)
 	myRouter.HandleFunc("/add", addItem)
+	myRouter.HandleFunc("/del", deleteItem)
 	myRouter.HandleFunc("/all", returnAllArticles)
 	myRouter.HandleFunc("/article/{id}", returnSingleArticle)
 	log.Fatal(http.ListenAndServe(":8080", myRouter))
+}
+
+func deleteItem(w http.ResponseWriter, r *http.Request) {
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String("us-east-1")},
+	)
+
+	// Create DynamoDB client
+	svc := dynamodb.New(sess)
+
+	Id := 2
+	Title := "aaa"
+	params := &dynamodb.DeleteItemInput{
+		TableName: aws.String("Articles"),
+		Key: map[string]*dynamodb.AttributeValue{
+			"Id": {
+				N: aws.String(strconv.Itoa(Id)),
+			},
+			"Title": {
+				S: aws.String(Title),
+			},
+		},
+	}
+
+	resp, err := svc.DeleteItem(params)
+	if err != nil {
+		fmt.Printf("ERROR: %v\n", err.Error())
+		return
+	}
+
+	// print the response data
+	fmt.Println("Success")
+	fmt.Println(resp)
 }
 
 func addItem(w http.ResponseWriter, r *http.Request) {
@@ -63,7 +98,8 @@ func addItem(w http.ResponseWriter, r *http.Request) {
 	svc := dynamodb.New(sess)
 
 	data := Article{
-		Title: "aaa", Id: 2,
+		// Title: "aaa", Id: 2,
+		Title: "bbb",
 	}
 
 	dd, err := dynamodbattribute.MarshalMap(data)
